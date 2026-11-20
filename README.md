@@ -27,3 +27,19 @@
 - 調整標題、島嶼標籤及資訊卡的字級、間距與手機版排列。
 
 請將 index.html、hotel_island_3d.html、hotel-island-data.json 放在同一資料夾，透過 GitHub Pages 或本機 HTTP 伺服器開啟。此專案使用 Three.js CDN，初次載入需要網路連線。
+
+
+## 中山街區微縮城市版（2026-11-20）
+- 保留 1 座晶華酒店中央主島及 20 座景點主題島，共 21 座等大六角島。
+- 景點島新增中山區街屋意象：窄巷、路面標線、低樓層店屋、行道樹與街燈，讓整體更接近城市街區微縮模型。
+- 點選島嶼會平滑聚焦並打開右側資訊卡；資訊卡呈現原始資料提供的簡介、捷運、座標、地址（若有）及官方／地圖連結。
+- 點選發光虛線可查看景點串聯建議。原始資料沒有提供正式合作或因果證據，因此連線以「建議路線」呈現，不宣稱官方合作。
+- 早上／中午／晚上照明切換、海面波紋、雲朵／熱氣球、Hover 放大及手機觸控縮放保留。
+
+### 今日版本部署
+將 `index.html`、`hotel_island_3d.html`、`hotel-island-data.json` 放在 GitHub Pages 專案根目錄；`index.html` 與 JSON 必須同資料夾。此網站使用 Three.js CDN，瀏覽時需要網路連線及支援 WebGL 的瀏覽器。
+
+
+### 快速預覽
+- 可直接雙擊 `preview.html` 開啟單檔預覽（需連網載入 Three.js CDN，且瀏覽器需支援 WebGL）。
+- GitHub Pages 正式部署仍使用 `index.html` 與同資料夾的 `hotel-island-data.json`。
