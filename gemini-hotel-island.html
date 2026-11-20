@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>安心旅宿特色導覽島</title>
+  <style>
+    :root {
+      --ocean-bg: #e0f2fe;
+      --ocean-grid: #bae6fd;
+      --primary: #0284c7;
+      --text-dark: #0f172a;
+      --text-muted: #475569;
+      --card-bg: #ffffff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+      color: var(--text-dark);
+      background-color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    /* 頂部導覽與篩選列 */
+    header {
+      background: var(--card-bg);
+      padding: 1rem 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 10;
+    }
+
+    .brand h1 { font-size: 1.25rem; color: var(--primary); }
+    .brand p { font-size: 0.85rem; color: var(--text-muted); }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    input, select {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: var(--primary); }
+
+    /* 電腦版：互動海洋地圖區 */
+    #map-container {
+      position: relative;
+      flex: 1;
+      background-color: var(--ocean-bg);
+      background-image: 
+        radial-gradient(var(--ocean-grid) 2px, transparent 2px),
+        radial-gradient(var(--ocean-grid) 2px, var(--ocean-bg) 2px);
+      background-size: 40px 40px;
+      background-position: 0 0, 20px 20px;
+      overflow: hidden;
+    }
+
+    /* 島嶼節點（預設電腦版樣式） */
+    .island-node {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      background: var(--card-bg);
+      border: 3px solid #38bdf8;
+      border-radius: 24px;
+      padding: 0.75rem 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(2, 132, 199, 0.18);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      text-align: center;
+      min-width: 150px;
+      animation: float 4s ease-in-out infinite;
+    }
+
+    .island-node:hover {
+      transform: translate(-50%, -56%) scale(1.06);
+      box-shadow: 0 12px 28px rgba(2, 132, 199, 0.3);
+      border-color: var(--primary);
+      z-index: 5;
+    }
+
+    @keyframes float {
+      0%, 100% { margin-top: 0px; }
+      50% { margin-top: -6px; }
+    }
+
+    .island-icon { font-size: 2rem; display: block; margin-bottom: 0.25rem; }
+    .island-title { font-weight: 700; font-size: 0.95rem; }
+    .island-badge {
+      display: inline-block;
+      margin-top: 0.35rem;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 99px;
+      background: #e0f2fe;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* 詳情彈窗 (Modal) */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 50;
+    }
+    .modal-backdrop.active { display: flex; }
+
+    .modal-card {
+      background: var(--card-bg);
+      max-width: 500px;
+      width: 100%;
+      border-radius: 16px;
+      padding: 1.75rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+      position: relative;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1.25rem;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .modal-meta {
+      display: flex;
+      gap: 0.5rem;
+      margin: 0.75rem 0 1rem;
+      font-size: 0.85rem;
+      flex-wrap: wrap;
+    }
+    .tag {
+      background: #f1f5f9;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .modal-desc {
+      line-height: 1.65;
+      color: #334155;
+      margin-bottom: 1.25rem;
+    }
+
+    .modal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    .source-link {
+      display: inline-block;
+      background: var(--primary);
+      color: #fff;
+      text-decoration: none;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    .source-link:hover { background: #0369a1; }
+
+    .share-btn {
+      background: #f1f5f9;
+      color: var(--text-dark);
+      border: 1px solid #cbd5e1;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .share-btn:hover { background: #e2e8f0; }
+
+    /* 手機版響應式設計 (螢幕寬度 <= 768px) */
+    @media (max-width: 768px) {
+      body {
+        height: auto;
+        min-height: 100vh;
+      }
+
+      header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .controls {
+        flex-direction: column;
+      }
+
+      input, select {
+        width: 100%;
+      }
+
+      #map-container {
+        position: static;
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+        padding: 1rem;
+        overflow-y: auto;
+        background-image: none;
+        background-color: #f1f5f9;
+      }
+
+      .island-node {
+        position: static;
+        transform: none !important;
+        width: 100%;
+        margin-top: 0 !important;
+        animation: none !important;
+        display: flex;
+        align-items: center;
+        text-align: left;
+        gap: 1rem;
+        padding: 1rem;
+        border-radius: 12px;
+        min-width: unset;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+        border: 1px solid #e2e8f0;
+      }
+
+      .island-node:active {
+        background-color: #f8fafc;
+      }
+
+      .island-icon {
+        font-size: 2.2rem;
+        margin-bottom: 0;
+        flex-shrink: 0;
+      }
+
+      .island-info {
+        flex: 1;
+      }
+
+      .island-title {
+        font-size: 1rem;
+        margin-bottom: 0.2rem;
+      }
+
+      .island-badge {
+        margin-top: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <h1>🏨 安心旅宿特色導覽島</h1>
+      <p>點擊地圖上的設施島嶼查看詳細說明與規範</p>
+    </div>
+    <div class="controls">
+      <input type="text" id="search-input" placeholder="搜尋設施與服務..." />
+      <select id="category-filter">
+        <option value="ALL">所有分類</option>
+      </select>
+      <select id="year-filter">
+        <option value="ALL">所有年份</option>
+      </select>
+    </div>
+  </header>
+
+  <main id="map-container"></main>
+
+  <!-- 詳情彈窗 -->
+  <div class="modal-backdrop" id="modal">
+    <div class="modal-card">
+      <button class="close-btn" id="close-modal">&times;</button>
+      <h2 id="modal-title"></h2>
+      <div class="modal-meta">
+        <span class="tag" id="modal-category"></span>
+        <span class="tag" id="modal-year"></span>
+        <span class="tag" id="modal-status"></span>
+      </div>
+      <p class="modal-desc" id="modal-details"></p>
+      <div class="modal-actions">
+        <a id="modal-source" class="source-link" href="#" target="_blank" rel="noopener noreferrer">查看官方規範 ↗</a>
+        <button id="copy-link-btn" class="share-btn">🔗 複製分享連結</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allPolicies = [];
+
+    const mapContainer = document.getElementById('map-container');
+    const searchInput = document.getElementById('search-input');
+    const categoryFilter = document.getElementById('category-filter');
+    const yearFilter = document.getElementById('year-filter');
+    const modal = document.getElementById('modal');
+    const copyLinkBtn = document.getElementById('copy-link-btn');
+
+    async function init() {
+      try {
+        const res = await fetch('./data.json');
+        allPolicies = await res.json();
+        populateFilters(allPolicies);
+        renderIslands(allPolicies);
+        checkUrlParameter();
+      } catch (err) {
+        mapContainer.innerHTML = `<p style="padding:2rem;color:#dc2626;text-align:center;">無法讀取 data.json。若在本機測試，請透過 VS Code Live Server 開啟。</p>`;
+      }
+    }
+
+    function checkUrlParameter() {
+      const params = new URLSearchParams(window.location.search);
+      const targetId = params.get('id');
+      if (targetId) {
+        const found = allPolicies.find(item => item.id === targetId);
+        if (found) {
+          openModal(found, false);
+        }
+      }
+    }
+
+    function populateFilters(data) {
+      const categories = [...new Set(data.map(item => item.category))];
+      const years = [...new Set(data.map(item => item.year))].sort((a, b) => b - a);
+
+      categories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        categoryFilter.appendChild(opt);
+      });
+
+      years.forEach(yr => {
+        const opt = document.createElement('option');
+        opt.value = yr;
+        opt.textContent = `${yr} 年`;
+        yearFilter.appendChild(opt);
+      });
+    }
+
+    function renderIslands(data) {
+      mapContainer.innerHTML = '';
+      data.forEach((item, index) => {
+        const node = document.createElement('div');
+        node.className = 'island-node';
+        node.style.left = `${item.position.x}%`;
+        node.style.top = `${item.position.y}%`;
+        node.style.animationDelay = `${index * 0.4}s`;
+
+        node.innerHTML = `
+          <span class="island-icon">${item.icon}</span>
+          <div class="island-info">
+            <div class="island-title">${item.title}</div>
+            <span class="island-badge">${item.category} · ${item.status}</span>
+          </div>
+        `;
+
+        node.addEventListener('click', () => openModal(item, true));
+        mapContainer.appendChild(node);
+      });
+    }
+
+    function filterData() {
+      const keyword = searchInput.value.trim().toLowerCase();
+      const selectedCat = categoryFilter.value;
+      const selectedYear = yearFilter.value;
+
+      const filtered = allPolicies.filter(item => {
+        const matchKeyword = item.title.toLowerCase().includes(keyword) ||
+                             item.summary.toLowerCase().includes(keyword) ||
+                             item.details.toLowerCase().includes(keyword);
+        const matchCat = selectedCat === 'ALL' || item.category === selectedCat;
+        const matchYear = selectedYear === 'ALL' || String(item.year) === selectedYear;
+        return matchKeyword && matchCat && matchYear;
+      });
+
+      renderIslands(filtered);
+    }
+
+    function openModal(item, updateUrl = true) {
+      document.getElementById('modal-title').textContent = `${item.icon} ${item.title}`;
+      document.getElementById('modal-category').textContent = item.category;
+      document.getElementById('modal-year').textContent = `${item.year} 年`;
+      document.getElementById('modal-status').textContent = item.status;
+      document.getElementById('modal-details').textContent = item.details;
+
+      const sourceEl = document.getElementById('modal-source');
+      sourceEl.textContent = `來源：${item.source.title} ↗`;
+      sourceEl.href = item.source.url;
+
+      copyLinkBtn.textContent = '🔗 複製分享連結';
+
+      if (updateUrl) {
+        const url = new URL(window.location);
+        url.searchParams.set('id', item.id);
+        window.history.pushState({ id: item.id }, '', url);
+      }
+
+      modal.classList.add('active');
+    }
+
+    function closeModal(updateUrl = true) {
+      modal.classList.remove('active');
+      if (updateUrl) {
+        const url = new URL(window.location);
+        url.searchParams.delete('id');
+        window.history.pushState({}, '', url);
+      }
+    }
+
+    copyLinkBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        copyLinkBtn.textContent = '✅ 已複製連結！';
+        setTimeout(() => {
+          copyLinkBtn.textContent = '🔗 複製分享連結';
+        }, 2000);
+      } catch (err) {
+        alert('複製失敗，請直接複製瀏覽器上方的網址列。');
+      }
+    });
+
+    window.addEventListener('popstate', () => {
+      const params = new URLSearchParams(window.location.search);
+      const targetId = params.get('id');
+      if (targetId) {
+        const found = allPolicies.find(item => item.id === targetId);
+        if (found) openModal(found, false);
+      } else {
+        closeModal(false);
+      }
+    });
+
+    document.getElementById('close-modal').addEventListener('click', () => closeModal(true));
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(true); });
+
+    searchInput.addEventListener('input', filterData);
+    categoryFilter.addEventListener('change', filterData);
+    yearFilter.addEventListener('change', filterData);
+
+    init();
+  </script>
+</body>
+</html>
